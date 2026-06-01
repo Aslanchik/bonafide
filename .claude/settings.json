@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git branch *)",
+      "Bash(git log *)",
+      "Bash(git status)",
+      "Bash(go build *)",
+      "Bash(go test *)",
+      "Bash(go vet *)",
+      "Bash(go get *)",
+      "Bash(go mod *)",
+      "Bash(uv *)",
+      "Bash(uv run *)",
+      "Bash(pytest *)",
+      "Bash(ruff *)",
+      "Bash(docker compose *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr view *)",
+      "Bash(rm *)"
+    ]
+  }
+}
