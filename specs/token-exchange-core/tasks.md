@@ -6,7 +6,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-01: [ ] Bootstrap repo skeleton and gitignore
+## T-01: [x] Bootstrap repo skeleton and gitignore
 
 **Satisfies:** scaffolding for all of TEC-1 through TEC-11
 

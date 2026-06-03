@@ -1,0 +1,18 @@
+# Go build outputs (per CLAUDE.md "Delete compiled binaries after build/test")
+/authz
+services/authz/authz
+services/authz/cmd/authz/authz
+*.test
+
+# Python
+__pycache__/
+.venv/
+*.egg-info/
+
+# Secrets — never tracked (per CLAUDE.md "No static long-lived secrets in source")
+deploy/authz/signing.key
+deploy/spire-stub/*.pem
+
+# Audit logs (default emit path is container-internal; this guards host-side strays)
+audit.log
+*.audit.log
