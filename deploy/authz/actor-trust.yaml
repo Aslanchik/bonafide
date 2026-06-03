@@ -1,0 +1,17 @@
+# Per-agent dev public keys the authz server accepts as actor_token signers.
+#
+# THIS FILE IS A TEMPLATE. scripts/bootstrap.sh (T-27) overwrites it at
+# compose-up time with the actual Ed25519 public keys generated for each
+# agent workload. The placeholder entry below documents the schema only;
+# the public_key_pem string is not valid PEM and LoadYAMLTrust will reject
+# it if the file is loaded as-is at runtime.
+#
+# spire-workload-identity (Slice 2) deletes this file and replaces the
+# verification path with FetchJWTBundles against the SPIRE Workload API.
+trusts:
+  - spiffe_id: spiffe://bonafide.local/agent/planner
+    kid: planner-dev-key-1
+    public_key_pem: |
+      -----BEGIN PUBLIC KEY-----
+      REPLACE_ME_AT_BOOTSTRAP
+      -----END PUBLIC KEY-----

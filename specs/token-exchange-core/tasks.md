@@ -92,7 +92,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-07: [ ] Implement `trust.IssuerTrust` (YAML-backed actor_token verifier; M1 stub)
+## T-07: [x] Implement `trust.IssuerTrust` (YAML-backed actor_token verifier; M1 stub)
 
 **Satisfies:** TEC-1 (actor_token verification), TEC-5 (fail-closed denial on bad actor_token), and the safety constraint **"Fail closed. Missing actor_token, unknown agent, unknown scope grammar, unparseable token, unreachable policy engine, expired anything → deny"**
 

@@ -29,6 +29,7 @@ The wire formats (CONTRACT.md §§5–9) are the **same** as every later slice �
 | HTTP server | `net/http` + `github.com/go-chi/chi/v5` for routing | chi keeps routing readable without pulling in a framework |
 | Logging | `log/slog` (stdlib) | Structured logs; no extra dep |
 | Testing | stdlib `testing` + `github.com/stretchr/testify` for assertions | Table-driven `act_chain_test.go` is the canonical test |
+| YAML (M1 only) | `gopkg.in/yaml.v3` | Loading `actor-trust.yaml` and `policy.yaml` stubs in TEC. Already pulled in transitively by testify; promoted to direct in T-07. Deleted with the stubs in SWI / OPE. |
 
 ### Python control plane / SDKs / apps
 
