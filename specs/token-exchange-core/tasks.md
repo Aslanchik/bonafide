@@ -60,7 +60,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-05: [ ] Table-driven tests for `act_chain.go` against CONTRACT.md §6.1
+## T-05: [x] Table-driven tests for `act_chain.go` against CONTRACT.md §6.1
 
 **Satisfies:** TEC-3 (the test acceptance criterion), the safety constraint **"a test asserting this against CONTRACT.md §6 ships in Slice 1 and is never deleted"**, CONTRACT.md §§6.1, 6.3
 
