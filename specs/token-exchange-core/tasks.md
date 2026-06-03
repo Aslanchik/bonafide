@@ -77,7 +77,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-06: [ ] Implement `keys.Signer` (Ed25519 load + JWKS publication)
+## T-06: [x] Implement `keys.Signer` (Ed25519 load + JWKS publication)
 
 **Satisfies:** TEC-3 (signature), TEC-4 (JWKS), CONTRACT.md §§3, 11, and the safety constraint **"All credentials short-lived ... No code path may extend these"** (the signer caps token TTLs implicitly via its `Sign` API)
 
