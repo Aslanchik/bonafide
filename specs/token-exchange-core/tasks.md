@@ -19,7 +19,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-02: [ ] Define Go module and pin Go data-plane dependencies
+## T-02: [x] Define Go module and pin Go data-plane dependencies
 
 **Satisfies:** TEC-1, TEC-3, TEC-4
 
@@ -27,7 +27,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 - Add the dependency set fixed in `design.md` "Go data plane": `github.com/zitadel/oidc/v3`, `github.com/go-jose/go-jose/v4`, `github.com/google/uuid`, `github.com/go-chi/chi/v5`, `github.com/stretchr/testify`. No additional dependencies.
 - Place a `cmd/authz/main.go` that compiles to nothing more than a `func main() { /* TODO: wire in T-13 */ }` so `go build ./...` succeeds.
 
-**Verified when:** `go build ./...` inside `services/authz` exits zero, and `go mod why github.com/zitadel/oidc/v3` confirms the dependency is direct. The resulting binary is deleted after the build per `CLAUDE.md` "Delete compiled binaries after build/test".
+**Verified when:** `go build ./...` inside `services/authz` exits zero, and `go list -m -f '{{.Indirect}}' github.com/zitadel/oidc/v3` prints `false` (confirming the dependency is direct, not transitive). The resulting binary is deleted after the build per `CLAUDE.md` "Delete compiled binaries after build/test". *Verification command amended from the original `go mod why` after T-02 surfaced a build-tag traversal limitation — see `agent-notes.md` 2026-06-03.*
 
 ---
 
