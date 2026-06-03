@@ -107,7 +107,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-08: [ ] Implement `policy.Gate` interface and YAML-map implementation (fail closed)
+## T-08: [x] Implement `policy.Gate` interface and YAML-map implementation (fail closed)
 
 **Satisfies:** TEC-5, and the safety constraint **"Fail closed ... There is no permissive mode and no fallback that grants access"**
 
