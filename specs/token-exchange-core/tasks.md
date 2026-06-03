@@ -31,7 +31,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-03: [ ] Define `exchange.Act`, `TaskTokenClaims`, `UserJWTClaims`, `ActorTokenClaims`, `PolicyInput`, `PolicyDecision`
+## T-03: [x] Define `exchange.Act`, `TaskTokenClaims`, `UserJWTClaims`, `ActorTokenClaims`, `PolicyInput`, `PolicyDecision`
 
 **Satisfies:** TEC-3, TEC-5 (input contract), CONTRACT.md §§4, 5, 6.1
 
