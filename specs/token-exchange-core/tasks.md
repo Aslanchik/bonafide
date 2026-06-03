@@ -44,7 +44,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-04: [ ] Implement `BuildAct`, `cloneAct`, `ChainDepth`, `FlattenChain` (the canonical nesting function)
+## T-04: [x] Implement `BuildAct`, `cloneAct`, `ChainDepth`, `FlattenChain` (the canonical nesting function)
 
 **Satisfies:** TEC-3, CONTRACT.md §6.1, and the safety constraint **"The `act` chain in minted tokens must always nest, never overwrite. A test asserting this against CONTRACT.md §6 ships in Slice 1 and is never deleted."**
 
