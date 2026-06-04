@@ -153,7 +153,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-11: [ ] Implement RFC 8693 `POST /token` handler
+## T-11: [x] Implement RFC 8693 `POST /token` handler
 
 **Satisfies:** TEC-1, TEC-3, TEC-5, CONTRACT.md §§7, 8, and the safety constraints **"Fail closed"**, **"All credentials short-lived"** (5-min cap on task token), **"The impersonation guard is unconditional"** (sub is never mutated)
 
