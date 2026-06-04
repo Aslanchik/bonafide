@@ -39,7 +39,7 @@ func TestLoad_Defaults(t *testing.T) {
 	s, err := Load()
 	require.NoError(t, err)
 	assert.Equal(t, ":8080", s.Listen)
-	assert.Equal(t, "http://authz.bonafide.local:8080", s.Issuer)
+	assert.Equal(t, "https://authz.bonafide.local", s.Issuer)
 	assert.Equal(t, "/etc/authz/signing.key", s.SigningKeyPath)
 	assert.Equal(t, "/etc/authz/actor-trust.yaml", s.ActorTrustPath)
 	assert.Equal(t, "/etc/authz/policy.yaml", s.PolicyPath)

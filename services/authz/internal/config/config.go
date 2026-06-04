@@ -20,7 +20,7 @@ import (
 // Defaults mirror design.md "Configuration → services/authz (Go)".
 const (
 	defaultListen              = ":8080"
-	defaultIssuer              = "http://authz.bonafide.local:8080"
+	defaultIssuer              = "https://authz.bonafide.local" // CONTRACT.md §§4, 5 canonical form; see agent-notes.md 2026-06-04
 	defaultSigningKeyPath      = "/etc/authz/signing.key"
 	defaultActorTrustPath      = "/etc/authz/actor-trust.yaml"
 	defaultPolicyPath          = "/etc/authz/policy.yaml"

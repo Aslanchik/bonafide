@@ -124,7 +124,7 @@ Each service reads its config from environment variables. No flags, no config fi
 | Env var | Default | Meaning |
 |---|---|---|
 | `BONAFIDE_AUTHZ_LISTEN` | `:8080` | HTTP listen address |
-| `BONAFIDE_AUTHZ_ISSUER` | `http://authz.bonafide.local:8080` | OIDC `iss` value; same string used in minted tokens |
+| `BONAFIDE_AUTHZ_ISSUER` | `https://authz.bonafide.local` | OIDC `iss` value; same string used in minted tokens. Canonical per CONTRACT.md §§4, 5 — independent of the dev HTTP listener URL (see agent-notes.md 2026-06-04). |
 | `BONAFIDE_AUTHZ_SIGNING_KEY_PATH` | `/etc/authz/signing.key` | Ed25519 PEM private key |
 | `BONAFIDE_AUTHZ_ACTOR_TRUST_PATH` | `/etc/authz/actor-trust.yaml` | `{spiffe_id: pubkey_pem}` map (M1 stub) |
 | `BONAFIDE_AUTHZ_POLICY_PATH` | `/etc/authz/policy.yaml` | In-memory policy table (M1 stub) |
@@ -136,7 +136,7 @@ Each service reads its config from environment variables. No flags, no config fi
 | Env var | Default | Meaning |
 |---|---|---|
 | `BONAFIDE_DEMO_HUMAN_SIGNING_KEY_PATH` | `/etc/authz/signing.key` | Same Ed25519 key the authz signs with (so the user JWT verifies against the same JWKS) |
-| `BONAFIDE_AUTHZ_ISSUER` | `http://authz.bonafide.local:8080` | Goes into `iss` |
+| `BONAFIDE_AUTHZ_ISSUER` | `https://authz.bonafide.local` | Goes into `iss` (CONTRACT.md §4). Separate from `BONAFIDE_AUTHZ_TOKEN_URL` below — the issuer is a wire identifier, not a transport URL. |
 | `BONAFIDE_USER_JWT_TTL_SECONDS` | `900` | 15-min ceiling per DESIGN.md §4 |
 
 ### `apps/demo-agent` and `sdks/agent-py`
@@ -158,7 +158,7 @@ Each service reads its config from environment variables. No flags, no config fi
 | Env var | Default | Meaning |
 |---|---|---|
 | `BONAFIDE_CALENDAR_LISTEN` | `0.0.0.0:9000` | |
-| `BONAFIDE_AUTHZ_ISSUER` | `http://authz.bonafide.local:8080` | Used for `iss` validation |
+| `BONAFIDE_AUTHZ_ISSUER` | `https://authz.bonafide.local` | Used for `iss` validation (CONTRACT.md §5). Transport URL is `BONAFIDE_AUTHZ_JWKS_URL` below. |
 | `BONAFIDE_AUTHZ_JWKS_URL` | `${ISSUER}/.well-known/jwks.json` | |
 | `BONAFIDE_RESOURCE_AUDIENCE` | `http://calendar.bonafide.local:9000` | Expected `aud` |
 | `BONAFIDE_CALENDAR_DSN_HEADER` | `X-Bonafide-Connection` | Header the agent uses to forward the Vault stub value to calendar |
