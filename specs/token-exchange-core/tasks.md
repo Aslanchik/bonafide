@@ -179,7 +179,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-12: [ ] Mint-side impersonation guard test — `sub` is never mutated
+## T-12: [x] Mint-side impersonation guard test — `sub` is never mutated
 
 **Satisfies:** TEC-3 (the mint-output invariant), CONTRACT.md §6.3, and the safety constraint **"The impersonation guard is unconditional ... Authorization decisions use top-level `sub` + outermost `act.sub` only."** This task is standalone per the tasks-writer rule that safety-critical paths are not bundled.
 

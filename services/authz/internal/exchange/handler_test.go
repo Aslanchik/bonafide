@@ -399,6 +399,82 @@ func TestHandler_HappyPath(t *testing.T) {
 	require.Equal(t, []string{}, ev.ExistingChain)
 }
 
+// T-12 locks in the CONTRACT.md §6.3 invariant from the mint side:
+// the handler must produce a task token whose `sub` equals the
+// subject_token's `sub` byte-for-byte, with no normalisation, no
+// lowercasing, and no dependence on the actor's identity. T-05's
+// shape-only test asserts the act-chain function signature cannot
+// read a subject identity; this test asserts the end-to-end mint
+// output preserves it across the whole handler.
+func TestHandler_MintedSubEqualsSubjectSub(t *testing.T) {
+	subjects := []string{
+		"spiffe://bonafide.local/human/alice@example.com",
+		"spiffe://bonafide.local/human/bob@example.com",
+		"spiffe://bonafide.local/human/charlie+test@example.com",
+	}
+
+	for _, subject := range subjects {
+		t.Run(subject, func(t *testing.T) {
+			signer := loadTestSigner(t)
+			emitter := &memoryEmitter{}
+			handler := newHandler(t, signer, allowGate, fakeVerifier{claims: validActorClaims}, emitter)
+
+			subjectJWT := signSubjectToken(t, signer, subject, nil)
+			rr := post(handler, validFormValues(subjectJWT, "any-actor-jwt"))
+			require.Equal(t, http.StatusOK, rr.Code)
+
+			var body map[string]any
+			require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &body))
+			access, ok := body["access_token"].(string)
+			require.True(t, ok)
+			_, claims := decodeJWT(t, access)
+
+			minted, ok := claims["sub"].(string)
+			require.True(t, ok)
+			require.Equal(t, subject, minted,
+				"minted task token sub must equal subject_token sub byte-for-byte (CONTRACT.md §6.3)")
+		})
+	}
+
+	// Negative case: the actor presents an actor_token whose sub
+	// matches the subject_token's sub — a mint-time impersonation
+	// attempt. CONTRACT.md §6.3 places the rejection in the resource
+	// SDK (T-21), not the mint path; the mint must succeed and the
+	// minted token's sub must still equal the human's sub (the handler
+	// does not adopt the actor's identity).
+	t.Run("actor sub equals subject sub does not propagate to minted sub", func(t *testing.T) {
+		signer := loadTestSigner(t)
+		emitter := &memoryEmitter{}
+		impersonatingActor := ActorTokenClaims{
+			Iss: testHumanSub,
+			Sub: testHumanSub,
+			Aud: testIssuer,
+			Iat: testFixedEpoch,
+			Exp: testFixedEpoch + 60,
+		}
+		handler := newHandler(t, signer, allowGate, fakeVerifier{claims: impersonatingActor}, emitter)
+
+		subjectJWT := signSubjectToken(t, signer, testHumanSub, nil)
+		rr := post(handler, validFormValues(subjectJWT, "any-actor-jwt"))
+		require.Equal(t, http.StatusOK, rr.Code)
+
+		var body map[string]any
+		require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &body))
+		_, claims := decodeJWT(t, body["access_token"].(string))
+		require.Equal(t, testHumanSub, claims["sub"],
+			"minted sub must equal subject_token sub even when actor_token sub matches it")
+
+		// Sanity: the act.sub is the (impersonating) actor, not the
+		// human-by-coincidence. The flat-equality check above passes
+		// trivially in this case (both equal testHumanSub) but the
+		// shape of act here is the real evidence of what the handler
+		// did.
+		act := claims["act"].(map[string]any)
+		require.Equal(t, testHumanSub, act["sub"],
+			"act.sub reflects the (impersonating) actor token verbatim — the resource SDK rejects this in T-21")
+	})
+}
+
 // decodeJWT splits a compact JWT and returns (header, claims). Used by
 // the happy-path test and by T-12. The signature is not verified — the
 // caller already trusts the signer it minted with.
