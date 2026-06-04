@@ -194,7 +194,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-13: [ ] Implement `internal/config` and wire `cmd/authz/main.go`
+## T-13: [x] Implement `internal/config` and wire `cmd/authz/main.go`
 
 **Satisfies:** TEC-1, TEC-4, and the fail-closed startup safety constraint (binary exits non-zero on missing key, missing trust file, missing policy file)
 
