@@ -140,7 +140,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-10: [ ] Implement `httputil` router and OAuth error helper
+## T-10: [x] Implement `httputil` router and OAuth error helper
 
 **Satisfies:** TEC-1 (HTTP 400 with JSON error body per CONTRACT.md §7), and the safety constraint that 5xx is reserved for genuine server errors
 
