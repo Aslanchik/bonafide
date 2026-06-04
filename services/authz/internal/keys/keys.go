@@ -73,6 +73,14 @@ func (s *Signer) KID() string {
 	return s.kid
 }
 
+// PublicKey returns the Ed25519 public half of the signer's key. The
+// exchange handler uses it to verify subject_tokens — the authz CLI
+// (demo-human, T-14) signs user JWTs with this same key, so the
+// signer is the authoritative verifier for them.
+func (s *Signer) PublicKey() ed25519.PublicKey {
+	return s.pub
+}
+
 // Sign signs the supplied claims as a JWT with alg=EdDSA and the
 // signer's kid in the JOSE header. The header argument carries
 // additional JOSE header fields (typ, etc.); attempts to override

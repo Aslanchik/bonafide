@@ -140,7 +140,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-10: [ ] Implement `httputil` router and OAuth error helper
+## T-10: [x] Implement `httputil` router and OAuth error helper
 
 **Satisfies:** TEC-1 (HTTP 400 with JSON error body per CONTRACT.md §7), and the safety constraint that 5xx is reserved for genuine server errors
 
@@ -153,7 +153,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-11: [ ] Implement RFC 8693 `POST /token` handler
+## T-11: [x] Implement RFC 8693 `POST /token` handler
 
 **Satisfies:** TEC-1, TEC-3, TEC-5, CONTRACT.md §§7, 8, and the safety constraints **"Fail closed"**, **"All credentials short-lived"** (5-min cap on task token), **"The impersonation guard is unconditional"** (sub is never mutated)
 
@@ -179,7 +179,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-12: [ ] Mint-side impersonation guard test — `sub` is never mutated
+## T-12: [x] Mint-side impersonation guard test — `sub` is never mutated
 
 **Satisfies:** TEC-3 (the mint-output invariant), CONTRACT.md §6.3, and the safety constraint **"The impersonation guard is unconditional ... Authorization decisions use top-level `sub` + outermost `act.sub` only."** This task is standalone per the tasks-writer rule that safety-critical paths are not bundled.
 
