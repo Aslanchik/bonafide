@@ -206,11 +206,11 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-14: [ ] Implement `apps/demo-human` CLI (user JWT minting)
+## T-14: [x] Implement `apps/demo-human` CLI (user JWT minting)
 
 **Satisfies:** TEC-2, CONTRACT.md §4, and the safety constraint **"All credentials short-lived"** (15-min ceiling)
 
-- Create `apps/demo-human/pyproject.toml` declaring dependencies `typer`, `python-jose[cryptography]`, `pydantic-settings`. Use `uv` per `design.md` "Stack (locked for this slice)".
+- Create `apps/demo-human/pyproject.toml` declaring dependencies `typer`, `PyJWT[crypto] >= 2.10`, `pydantic-settings`. Use `uv` per `design.md` "Stack (locked for this slice)". The original `python-jose[cryptography]` pin was dropped during T-14 because that library does not implement EdDSA — see `agent-notes.md` 2026-06-04.
 - Create `apps/demo-human/demo_human/__main__.py` with a `typer` CLI accepting `--email <addr>` (required) and `--ttl <seconds>` (default 900, hard cap 900 per `design.md` "Configuration" → `apps/demo-human` and `CLAUDE.md` "Safety constraints").
 - Load the Ed25519 PEM at `BONAFIDE_DEMO_HUMAN_SIGNING_KEY_PATH` (same key the authz signs with per `design.md` "JWT signing key").
 - Mint a JWT with the CONTRACT.md §4 claim set: `iss = BONAFIDE_AUTHZ_ISSUER`, `sub = spiffe://bonafide.local/human/<email>`, `aud = BONAFIDE_AUTHZ_ISSUER`, `iat`, `exp = iat + min(ttl, 900)`, `jti = uuid4`, optional `email = <email>`. Sign with `alg=EdDSA`. Set the JOSE header `kid` to the authz signer's kid (so the authz JWKS resolves it).
@@ -225,7 +225,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 **Satisfies:** TEC-10 (actor_token minting portion), and **"No static long-lived secrets ... The agent SDK never reads a credential from disk"** — clarified by `design.md`: the per-workload Ed25519 key on disk is the M1 stub for SPIRE; the SDK reads it once at construction time and signs in memory; no Vault/exchange credentials are read from disk
 
-- Create `sdks/agent-py/pyproject.toml` with dependencies `python-jose[cryptography]`, `httpx`, `hvac` (Vault client), `pydantic`. Package name `bonafide_agent`.
+- Create `sdks/agent-py/pyproject.toml` with dependencies `PyJWT[crypto] >= 2.10`, `httpx`, `hvac` (Vault client), `pydantic`. Package name `bonafide_agent`. The original `python-jose[cryptography]` pin was dropped during T-14 — that library does not implement EdDSA. See `agent-notes.md` 2026-06-04.
 - Create `sdks/agent-py/bonafide_agent/__init__.py` exporting `BonafideAgent`, `TaskToken`, errors.
 - Create `sdks/agent-py/bonafide_agent/identity.py` implementing `sign_actor_token(key_path, kid, spiffe_id, issuer_audience) -> str` exactly per `design.md` "`identity.py`":
   - Reads Ed25519 PEM from `key_path` once and signs `{iss, sub, aud, iat, exp, jti}` with `alg=EdDSA`, `kid` in JOSE header.
@@ -284,7 +284,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 **Satisfies:** TEC-9 (types), CONTRACT.md §6.2
 
-- Create `sdks/resource-py/pyproject.toml` with dependencies `fastapi`, `python-jose[cryptography]`, `httpx`, `pydantic`. Package name `bonafide_resource`.
+- Create `sdks/resource-py/pyproject.toml` with dependencies `fastapi`, `PyJWT[crypto] >= 2.10`, `httpx`, `pydantic`. Package name `bonafide_resource`. The original `python-jose[cryptography]` pin was dropped during T-14 — that library does not implement EdDSA. See `agent-notes.md` 2026-06-04.
 - Create `sdks/resource-py/bonafide_resource/__init__.py` exporting `TokenValidator`, `ActorChain`, errors.
 - Create `sdks/resource-py/bonafide_resource/chain.py` defining the `ActorChain` dataclass exactly per `design.md` "Middleware": `subject: str`, `current_actor: str`, `prior_actors: tuple[str, ...]`, and `all_actors: tuple[str, ...]` property (current_actor first, per CONTRACT.md §6.2).
 - Create `sdks/resource-py/bonafide_resource/errors.py` with `TokenValidationError`, `ImpersonationGuardError`.
@@ -314,7 +314,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
   - Extract the bearer token from `Authorization`. Missing → HTTPException 401 `"missing bearer token"`.
   - Read the unverified JOSE header. If `alg in (None, "none")`, reject with HTTPException 401 `"alg=none rejected"` — regardless of JWKS contents (CONTRACT.md §3).
   - Resolve the public key via `JWKSCache.get_key(header["kid"])`.
-  - Verify the JWT with `python-jose`: `algorithms=["EdDSA"]`, `issuer=self._issuer`, `audience=self._audience`, `leeway=0` (strict `exp` per DESIGN.md §4 / TEC-9 acceptance criterion: "The middleware applies `exp` strictly with no leeway").
+  - Verify the JWT with **PyJWT**: `algorithms=["EdDSA"]`, `issuer=self._issuer`, `audience=self._audience`, `leeway=0` (strict `exp` per DESIGN.md §4 / TEC-9 acceptance criterion: "The middleware applies `exp` strictly with no leeway"). The library swap from python-jose to PyJWT is recorded in `agent-notes.md` 2026-06-04.
   - Call `_extract_chain(claims)` to construct `ActorChain`:
     - If `act is None` or `"sub" not in act`, raise 401 `"task token missing act claim"`.
     - Impersonation guard (CONTRACT.md §6.3): if `claims["sub"]` does not start with `spiffe://bonafide.local/human/`, log an `impersonation_guard_triggered` event (slog/structlog/print depending on app config) and raise 401 with `impersonation_guard_triggered` in the message.
