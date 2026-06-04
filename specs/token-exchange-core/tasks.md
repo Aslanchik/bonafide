@@ -124,7 +124,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
 
 ---
 
-## T-09: [ ] Implement `audit.Emitter` interface and file-backed implementation
+## T-09: [x] Implement `audit.Emitter` interface and file-backed implementation
 
 **Satisfies:** TEC-6, CONTRACT.md §9
 
