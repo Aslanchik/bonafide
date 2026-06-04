@@ -65,7 +65,7 @@ If a slice's `requirements.md` touches a path that interacts with these constrai
 - **Vault:** 1.21+. Native SPIFFE auth method primary path; Vault JWT auth + SPIRE OIDC discovery is the documented fallback
 - **Policy:** `github.com/open-policy-agent/opa/rego` embedded as a Go library (from Slice 4)
 - **Postgres:** 16
-- **JWT signing:** Ed25519 throughout
+- **JWT signing:** Ed25519 throughout. Go side uses `github.com/go-jose/go-jose/v4` (pulled in transitively by zitadel/oidc, promoted to direct in T-06). Python side uses **PyJWT ≥ 2.10** with the `cryptography` extra — `python-jose` does not support EdDSA at the JWS layer and is *not* on this stack (see `agent-notes.md` 2026-06-04).
 - **Container topology:** Docker Compose, one file
 
 Ask before adding any dependency not on this list.

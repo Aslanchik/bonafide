@@ -39,7 +39,7 @@ The wire formats (CONTRACT.md §§5–9) are the **same** as every later slice �
 | Web | FastAPI + uvicorn | For control plane, calendar app, and a tiny health surface on demo-agent |
 | Schemas | Pydantic v2 | |
 | Settings | `pydantic-settings` | Env-based config |
-| JWT | `python-jose[cryptography]` | Ed25519 support; JWKS validation |
+| JWT | **`PyJWT` ≥ 2.10** with the `cryptography` extra | EdDSA sign + verify; consumes a JWKS dict via `PyJWK`. `python-jose` was the original choice but does not implement EdDSA — see `agent-notes.md` 2026-06-04. |
 | HTTP client | `httpx` | Async-capable; used by agent SDK |
 | Calendar DB | `asyncpg` | Async Postgres driver; calendar app reads one row per request |
 | CLI | `typer` | The demo-human CLI |
@@ -460,9 +460,9 @@ def sign_actor_token(*, key_path: str, kid: str, spiffe_id: str,
         "exp": now + 60,             # 1 min — actor_tokens live only across one exchange
         "jti": str(uuid.uuid4()),
     }
-    private_key = _load_ed25519_private_key(key_path)
-    return jose.jwt.encode(claims, private_key, algorithm="EdDSA",
-                           headers={"kid": kid, "alg": "EdDSA"})
+    private_key = _load_ed25519_private_key(key_path)  # cryptography Ed25519PrivateKey
+    return jwt.encode(claims, private_key, algorithm="EdDSA",
+                      headers={"kid": kid})            # PyJWT — alg goes in headers automatically
 ```
 
 ---
@@ -498,20 +498,20 @@ class TokenValidator:
         if token is None:
             raise HTTPException(401, "missing bearer token")
 
-        header = jose.jws.get_unverified_header(token)
+        header = jwt.get_unverified_header(token)
         if header.get("alg") in (None, "none"):
             raise HTTPException(401, "alg=none rejected")
 
-        key = await self._jwks.get_key(header["kid"])
+        key = await self._jwks.get_key(header["kid"])    # PyJWK with .key attr
         try:
-            claims = jose.jwt.decode(
+            claims = jwt.decode(
                 token, key,
                 algorithms=["EdDSA"],
                 issuer=self._issuer,
                 audience=self._audience,
-                options={"verify_at_hash": False, "leeway": 0},  # CONTRACT.md §3: strict exp
+                leeway=0,                                # CONTRACT.md §3 / DESIGN.md §4: strict exp
             )
-        except jose.JWTError as e:
+        except jwt.PyJWTError as e:
             raise HTTPException(401, f"token rejected: {e}")
 
         chain = self._extract_chain(claims)         # impersonation guard runs inside
@@ -816,7 +816,7 @@ Future slices append a block; the block above never changes.
 - **Calendar uses Postgres connection string in a request header.** Dev-only convention. Header name: `X-Bonafide-Connection`. VSA replaces with a leased credential and may keep the header (different semantics) or change to per-token claims; that decision is VSA's.
 - **Audit emitter buffer.** 256-event buffered channel with a 100 ms backpressure window before dropping. Drops are logged at ERROR and visible in metrics. AUD's HTTP-based emitter keeps the same buffer + retry shape.
 - **CLI tools live in `apps/`, not in `tools/` or `bin/`.** Same pattern as go-phish's `cmd/`. `demo-human`, `demo-agent`, `demo-calendar` are all "apps you can run."
-- **JWT library: `python-jose[cryptography]` (Python) + `go-jose/v4` (Go).** Both support EdDSA; both are used transitively or directly by the OIDC libraries we already pull in. `python-jose` is the most-used Python JWT lib that supports JWKS-based validation with EdDSA without writing custom verification code.
+- **JWT library: `PyJWT` ≥ 2.10 with `[cryptography]` (Python) + `go-jose/v4` (Go).** Both implement EdDSA at the JWS layer (PyJWT since 2.6; go-jose since v2). The earlier pin to `python-jose[cryptography]` was wrong — that library never gained EdDSA, and the discovery happened mid-T-14 (see `agent-notes.md` 2026-06-04). PyJWT's `PyJWK` helper consumes a JWKS dict directly, which the resource SDK relies on in T-20.
 - **No leeway on `exp`.** Per CONTRACT.md §3 and DESIGN.md §4: strict expiry. Tested explicitly in the resource SDK.
 
 ---

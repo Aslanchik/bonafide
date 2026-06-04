@@ -37,3 +37,15 @@ Format:
 
 **Carries forward.** Whenever a design.md table specifies a "default value" for a wire-format identifier (issuer, audience, SPIFFE trust domain root), cross-check it against `CONTRACT.md` before landing. Wire-format identifiers and transport URLs are conceptually separate; conflating them in env-var defaults silently bakes wire bugs into the runtime.
 
+---
+
+## 2026-06-04 — `python-jose` cannot sign or verify EdDSA; swapped to `PyJWT`
+
+**Symptom.** T-14 implemented `demo-human` per the `CLAUDE.md` stack pin (`python-jose[cryptography]`) and the CLI failed at signing time with `JWSError: Algorithm EdDSA not supported.` from `jose/jws.py:43`. Direct introspection of the installed `python-jose==3.5.0` (latest on PyPI) confirmed `ALGORITHMS.SUPPORTED` carries `ES256/384/512`, `RS256/384/512`, and the HS/A* families — no `EdDSA`. The library does not have, and has never had, an EdDSA implementation; the relevant PR has been open and unmerged for years.
+
+**Diagnosis.** `CLAUDE.md` "Stack pins" and `specs/token-exchange-core/design.md` "Python control plane / SDKs / apps" both list `python-jose[cryptography]` as the Python JWT library "because it supports Ed25519". That premise is false: the `[cryptography]` extra adds the cryptography dependency but does not enable EdDSA at the JWS layer. Every Python touch of bonafide JWTs (T-14 user JWT mint, T-15 actor_token mint in the agent SDK, T-19–T-21 resource SDK task-token verify) would hit the same wall. This is the `CLAUDE.md` "When something feels wrong" case — a library cannot do what the protocol requires — so the response is to stop and swap, not to silently work around with hand-rolled JWS or a niche fork.
+
+**Fix.** Swapped to `PyJWT >= 2.10` (latest is 2.13.0; the project pins ≥ 2.10 because 2.10 dropped EdDSA-related deprecation warnings). PyJWT signs and verifies EdDSA via the `cryptography` backend (already a transitive dep), exposes `jwt.encode`/`jwt.decode`/`jwt.get_unverified_header` with the same shape we were going to use, and ships a `PyJWK` helper that consumes a JWKS dict directly — which the resource SDK will lean on in T-20. Updated `CLAUDE.md` "Stack pins", `specs/token-exchange-core/design.md` "Python control plane / SDKs / apps" + the embedded `identity.py` and resource-SDK `middleware.py` excerpts to reference PyJWT, and updated every TEC task body in `specs/token-exchange-core/tasks.md` that named `python-jose` to name `PyJWT` instead. `python-jose` is removed from every `pyproject.toml` so the wrong dependency does not even land in the venv.
+
+**Carries forward.** Library choices made on the strength of "this transitively pulls in cryptography" are not the same as "this exposes EdDSA at the protocol surface". Every future stack pin for a crypto-touching library needs an explicit, tested round-trip against the algorithm the contract requires before it gets pinned — not after the binding has rippled through six tasks.
+
