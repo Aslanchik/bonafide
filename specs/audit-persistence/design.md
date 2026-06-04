@@ -17,7 +17,7 @@ Everything else from TEC, SWI, VSA, and OPE is unchanged. The policy gate, the S
 | Postgres async driver (control plane) | `asyncpg` | Already used by the calendar app; consistent toolchain |
 | Migrations | `alembic` | Schema is stable enough; Alembic for the two tables |
 | Buffer storage on authz | `tidwall/wal` (`github.com/tidwall/wal`) | Lightweight append-only WAL in Go; survives restart; small dep |
-| JWT validation (control plane) | `python-jose[cryptography]` | Same lib the resource SDK uses; can be imported from `bonafide_resource.jwks` |
+| JWT validation (control plane) | **`PyJWT[crypto] >= 2.10`** | Same lib the resource SDK uses; can be imported from `bonafide_resource.jwks`. The earlier pin to `python-jose[cryptography]` was wrong — it does not implement EdDSA; see `agent-notes.md` 2026-06-04. |
 
 The WAL choice: a single-file append-log keyed by a monotonically increasing index. Authz writes each pending event; the drain goroutine reads from the WAL and POSTs; successful POSTs advance the WAL's read cursor. The cursor is persisted, so a restart resumes from where the drain left off.
 

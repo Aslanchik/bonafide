@@ -39,7 +39,7 @@ The wire formats (CONTRACT.md §§5–9) are the **same** as every later slice �
 | Web | FastAPI + uvicorn | For control plane, calendar app, and a tiny health surface on demo-agent |
 | Schemas | Pydantic v2 | |
 | Settings | `pydantic-settings` | Env-based config |
-| JWT | `python-jose[cryptography]` | Ed25519 support; JWKS validation |
+| JWT | **`PyJWT` ≥ 2.10** with the `cryptography` extra | EdDSA sign + verify; consumes a JWKS dict via `PyJWK`. `python-jose` was the original choice but does not implement EdDSA — see `agent-notes.md` 2026-06-04. |
 | HTTP client | `httpx` | Async-capable; used by agent SDK |
 | Calendar DB | `asyncpg` | Async Postgres driver; calendar app reads one row per request |
 | CLI | `typer` | The demo-human CLI |
@@ -124,7 +124,7 @@ Each service reads its config from environment variables. No flags, no config fi
 | Env var | Default | Meaning |
 |---|---|---|
 | `BONAFIDE_AUTHZ_LISTEN` | `:8080` | HTTP listen address |
-| `BONAFIDE_AUTHZ_ISSUER` | `http://authz.bonafide.local:8080` | OIDC `iss` value; same string used in minted tokens |
+| `BONAFIDE_AUTHZ_ISSUER` | `https://authz.bonafide.local` | OIDC `iss` value; same string used in minted tokens. Canonical per CONTRACT.md §§4, 5 — independent of the dev HTTP listener URL (see agent-notes.md 2026-06-04). |
 | `BONAFIDE_AUTHZ_SIGNING_KEY_PATH` | `/etc/authz/signing.key` | Ed25519 PEM private key |
 | `BONAFIDE_AUTHZ_ACTOR_TRUST_PATH` | `/etc/authz/actor-trust.yaml` | `{spiffe_id: pubkey_pem}` map (M1 stub) |
 | `BONAFIDE_AUTHZ_POLICY_PATH` | `/etc/authz/policy.yaml` | In-memory policy table (M1 stub) |
@@ -136,7 +136,7 @@ Each service reads its config from environment variables. No flags, no config fi
 | Env var | Default | Meaning |
 |---|---|---|
 | `BONAFIDE_DEMO_HUMAN_SIGNING_KEY_PATH` | `/etc/authz/signing.key` | Same Ed25519 key the authz signs with (so the user JWT verifies against the same JWKS) |
-| `BONAFIDE_AUTHZ_ISSUER` | `http://authz.bonafide.local:8080` | Goes into `iss` |
+| `BONAFIDE_AUTHZ_ISSUER` | `https://authz.bonafide.local` | Goes into `iss` (CONTRACT.md §4). Separate from `BONAFIDE_AUTHZ_TOKEN_URL` below — the issuer is a wire identifier, not a transport URL. |
 | `BONAFIDE_USER_JWT_TTL_SECONDS` | `900` | 15-min ceiling per DESIGN.md §4 |
 
 ### `apps/demo-agent` and `sdks/agent-py`
@@ -158,7 +158,7 @@ Each service reads its config from environment variables. No flags, no config fi
 | Env var | Default | Meaning |
 |---|---|---|
 | `BONAFIDE_CALENDAR_LISTEN` | `0.0.0.0:9000` | |
-| `BONAFIDE_AUTHZ_ISSUER` | `http://authz.bonafide.local:8080` | Used for `iss` validation |
+| `BONAFIDE_AUTHZ_ISSUER` | `https://authz.bonafide.local` | Used for `iss` validation (CONTRACT.md §5). Transport URL is `BONAFIDE_AUTHZ_JWKS_URL` below. |
 | `BONAFIDE_AUTHZ_JWKS_URL` | `${ISSUER}/.well-known/jwks.json` | |
 | `BONAFIDE_RESOURCE_AUDIENCE` | `http://calendar.bonafide.local:9000` | Expected `aud` |
 | `BONAFIDE_CALENDAR_DSN_HEADER` | `X-Bonafide-Connection` | Header the agent uses to forward the Vault stub value to calendar |
@@ -460,9 +460,9 @@ def sign_actor_token(*, key_path: str, kid: str, spiffe_id: str,
         "exp": now + 60,             # 1 min — actor_tokens live only across one exchange
         "jti": str(uuid.uuid4()),
     }
-    private_key = _load_ed25519_private_key(key_path)
-    return jose.jwt.encode(claims, private_key, algorithm="EdDSA",
-                           headers={"kid": kid, "alg": "EdDSA"})
+    private_key = _load_ed25519_private_key(key_path)  # cryptography Ed25519PrivateKey
+    return jwt.encode(claims, private_key, algorithm="EdDSA",
+                      headers={"kid": kid})            # PyJWT — alg goes in headers automatically
 ```
 
 ---
@@ -498,20 +498,20 @@ class TokenValidator:
         if token is None:
             raise HTTPException(401, "missing bearer token")
 
-        header = jose.jws.get_unverified_header(token)
+        header = jwt.get_unverified_header(token)
         if header.get("alg") in (None, "none"):
             raise HTTPException(401, "alg=none rejected")
 
-        key = await self._jwks.get_key(header["kid"])
+        key = await self._jwks.get_key(header["kid"])    # PyJWK with .key attr
         try:
-            claims = jose.jwt.decode(
+            claims = jwt.decode(
                 token, key,
                 algorithms=["EdDSA"],
                 issuer=self._issuer,
                 audience=self._audience,
-                options={"verify_at_hash": False, "leeway": 0},  # CONTRACT.md §3: strict exp
+                leeway=0,                                # CONTRACT.md §3 / DESIGN.md §4: strict exp
             )
-        except jose.JWTError as e:
+        except jwt.PyJWTError as e:
             raise HTTPException(401, f"token rejected: {e}")
 
         chain = self._extract_chain(claims)         # impersonation guard runs inside
@@ -816,7 +816,7 @@ Future slices append a block; the block above never changes.
 - **Calendar uses Postgres connection string in a request header.** Dev-only convention. Header name: `X-Bonafide-Connection`. VSA replaces with a leased credential and may keep the header (different semantics) or change to per-token claims; that decision is VSA's.
 - **Audit emitter buffer.** 256-event buffered channel with a 100 ms backpressure window before dropping. Drops are logged at ERROR and visible in metrics. AUD's HTTP-based emitter keeps the same buffer + retry shape.
 - **CLI tools live in `apps/`, not in `tools/` or `bin/`.** Same pattern as go-phish's `cmd/`. `demo-human`, `demo-agent`, `demo-calendar` are all "apps you can run."
-- **JWT library: `python-jose[cryptography]` (Python) + `go-jose/v4` (Go).** Both support EdDSA; both are used transitively or directly by the OIDC libraries we already pull in. `python-jose` is the most-used Python JWT lib that supports JWKS-based validation with EdDSA without writing custom verification code.
+- **JWT library: `PyJWT` ≥ 2.10 with `[cryptography]` (Python) + `go-jose/v4` (Go).** Both implement EdDSA at the JWS layer (PyJWT since 2.6; go-jose since v2). The earlier pin to `python-jose[cryptography]` was wrong — that library never gained EdDSA, and the discovery happened mid-T-14 (see `agent-notes.md` 2026-06-04). PyJWT's `PyJWK` helper consumes a JWKS dict directly, which the resource SDK relies on in T-20.
 - **No leeway on `exp`.** Per CONTRACT.md §3 and DESIGN.md §4: strict expiry. Tested explicitly in the resource SDK.
 
 ---

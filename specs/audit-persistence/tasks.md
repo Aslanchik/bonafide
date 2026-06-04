@@ -166,7 +166,7 @@ Status: `[ ]` todo · `[x]` done · `[~]` in progress
   - Include the audit ingest router (T-04) and the audit chain router (T-07) into the app.
   - Add config loading: `BONAFIDE_CONTROL_DATABASE_URL` (required, no default), `BONAFIDE_AUTHZ_ISSUER` (required, for `_chain_from_token` validation), `BONAFIDE_AUTHZ_JWKS_URL` (required). Missing required env var → fail to start with a structured log line (fail closed per `CLAUDE.md` "Fail closed").
   - The existing `GET /healthz` route is preserved.
-- Update `services/control/pyproject.toml` to depend on `asyncpg`, `alembic`, `pydantic`, `python-jose[cryptography]`, and the local `bonafide_resource` package (for `JWKSCache`).
+- Update `services/control/pyproject.toml` to depend on `asyncpg`, `alembic`, `pydantic`, `PyJWT[crypto] >= 2.10`, and the local `bonafide_resource` package (for `JWKSCache`). (The JWT library was swapped from `python-jose` to `PyJWT` mid-TEC because python-jose does not implement EdDSA; see `agent-notes.md` 2026-06-04.)
 - Tests at `services/control/tests/test_app.py`:
   - App starts when all env vars are set against a test Postgres; `/healthz` returns 200.
   - App refuses to start when `BONAFIDE_CONTROL_DATABASE_URL` is unset (the lifespan handler raises and the app does not bind a listener).
